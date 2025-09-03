@@ -40,13 +40,26 @@ int increment_password(char *password, const char *charset, int charset_len, int
     
     // IMPLEMENTE AQUI:
     // - Percorrer password de trás para frente
+    for (int i = password_len - 1; i >= 0; i--) {
     // - Para cada posição, encontrar índice atual no charset
+        int index = 0;
+        while (index < charset_len && charset[index] != password[i]) {
+            index++;
+        }
+
+        if (index >= charset_len) return 0; 
     // - Incrementar índice
     // - Se não estourou: atualizar caractere e retornar 1
+        if (index + 1 < charset_len) {
+            password[i] = charset[index + 1];
+            return 1;
+        }
     // - Se estourou: definir como primeiro caractere e continuar loop
+        else {
+            password[i] = charset[0];
+        }
     // - Se todos estouraram: retornar 0 (fim do espaço)
-    
-    return 0;  // SUBSTITUA por sua implementação
+        return 0;
 }
 
 /**
@@ -78,8 +91,16 @@ void save_result(int worker_id, const char *password) {
     
     // IMPLEMENTE AQUI:
     // - Tentar abrir arquivo com O_CREAT | O_EXCL | O_WRONLY
+    int fd = open(RESULT_FILE, O_CREAT | O_EXCL | O_WRONLY, 0644);
     // - Se sucesso: escrever resultado e fechar
     // - Se falhou: outro worker já encontrou
+    if (fd >= 0) {
+        char buffer[256];
+        int len = snprintf(buffer, sizeof(buffer), "%d:%s\n", worker_id, password);
+        write(fd, buffer, len);
+        close(fd);
+        printf("[Worker %d] Resultado salvo!\n", worker_id);
+    }
 }
 
 /**
@@ -139,8 +160,7 @@ int main(int argc, char *argv[]) {
     time_t end_time = time(NULL);
     double total_time = difftime(end_time, start_time);
     
-    printf("[Worker %d] Finalizado. Total: %lld senhas em %.2f segundos", 
-           worker_id, passwords_checked, total_time);
+    printf("[Worker %d] Finalizado. Total: %lld senhas em %.2f segundos", worker_id, passwords_checked, total_time);
     if (total_time > 0) {
         printf(" (%.0f senhas/s)", passwords_checked / total_time);
     }
