@@ -59,7 +59,7 @@ int increment_password(char *password, const char *charset, int charset_len, int
             password[i] = charset[0];
         }
     // - Se todos estouraram: retornar 0 (fim do espaço)
-        return 0;
+    return 0;
 }
 
 /**
