@@ -162,11 +162,23 @@ int main(int argc, char *argv[]) {
     // IMPORTANTE: O pai deve aguardar TODOS os filhos para evitar zumbis
     
     // IMPLEMENTE AQUI:
-    // - Loop para aguardar cada worker terminar
-    // - Usar wait() para capturar status de saída
-    // - Identificar qual worker terminou
-    // - Verificar se terminou normalmente ou com erro
-    // - Contar quantos workers terminaram
+	// - Loop para aguardar cada worker terminar
+    for (int i = 0; i < num_workers; i++) {
+        int status;
+		// - Usar wait() para capturar status de saída
+        pid_t pid_done = wait(&status);
+        if (pid_done > 0) {
+			// - Identificar qual worker terminou
+            if (WIFEXITED(status)) {
+                int code = WEXITSTATUS(status);
+                printf("Worker PID %d terminou com código %d\n", pid_done, code);
+			// - Verificar se terminou normalmente ou com erro
+			// - Contar quantos workers terminaram
+            } else {
+                printf("Worker PID %d terminou de forma anormal\n", pid_done);
+            }
+        }
+    }
     
     // Registrar tempo de fim
     time_t end_time = time(NULL);
@@ -176,16 +188,39 @@ int main(int argc, char *argv[]) {
     
     // TODO 9: Verificar se algum worker encontrou a senha
     // Ler o arquivo password_found.txt se existir
-    
-    // IMPLEMENTE AQUI:
-    // - Abrir arquivo RESULT_FILE para leitura
-    // - Ler conteúdo do arquivo
-    // - Fazer parse do formato "worker_id:password"
-    // - Verificar o hash usando md5_string()
-    // - Exibir resultado encontrado
-    
     // Estatísticas finais (opcional)
     // TODO: Calcular e exibir estatísticas de performance
+    // IMPLEMENTE AQUI:
+	// - Abrir arquivo RESULT_FILE para leitura
+	// - Ler conteúdo do arquivo
+	int fd = open(RESULT_FILE, O_RDONLY);
+    if (fd >= 0) {
+        char buffer[256];
+        int n = read(fd, buffer, sizeof(buffer)-1);
+        if (n > 0) {
+            buffer[n] = '\0';
+            // - Fazer parse do formato "worker_id:password" (usando sscanf com limite de tamanho)
+            int worker_id;
+            char found_password[33];
+            if (sscanf(buffer, "%d:%32s", &worker_id, found_password) == 2) {
+                char verify_hash[33];
+				// - Verificar o hash usando md5_string()
+                md5_string(found_password, verify_hash);
+				// - Exibir resultado encontrado
+                if (strcmp(verify_hash, target_hash) == 0) {
+                    printf("Senha encontrada pelo Worker %d: %s\n", worker_id, found_password);
+                } else {
+                    printf("Senha encontrada não está de acordo com o hash.\n");
+                }
+            } else {
+                printf("formato do arquivo inválido\n");
+            }
+        }
+        close(fd);
+    } else {
+        printf("Nenhum worker encontrou a senha.\n");
+    }
+    printf("Tempo total: %.2f segundos\n", elapsed_time);
     
     return 0;
 }
