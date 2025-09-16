@@ -146,12 +146,18 @@ int main(int argc, char *argv[]) {
 
 	// TODO 6: No processo filho: usar execl() para executar worker
 	else {
-            char start_str[32], end_str[32];
-            sprintf(start_str, "%lld", inicio);
-            sprintf(end_str, "%lld", fim);
-            execl("./worker", "./worker", start_str, end_str, (char *)NULL);
-            perror("Erro no execl");
-            exit(1);
+        char start_password[11], end_password[11];
+        char len_str[4], id_str[4];
+
+        index_to_password(inicio, charset, charset_len, password_len, start_password);
+        index_to_password(fim,    charset, charset_len, password_len, end_password);
+        sprintf(len_str, "%d", password_len);
+        sprintf(id_str, "%d", i);
+
+        execl("./worker", "./worker", target_hash, start_password, end_password, charset, len_str, id_str, (char *)NULL);
+
+        perror("Erro no execl");
+        exit(1);
         }
 	// TODO 7: Tratar erros de fork() e execl()
     }
