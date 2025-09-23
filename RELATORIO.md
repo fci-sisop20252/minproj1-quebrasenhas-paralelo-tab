@@ -8,11 +8,18 @@
 
 **Como você dividiu o espaço de busca entre os workers?**
 
-[Explique seu algoritmo de divisão]
+O espaço de busca foi dividido igualmente entre os workers. O espaço reservado para cada worker foi calculado a partir do número total de workers, onde foi calculado o numero de senhas por worker, e os limites de início e fim para cada worker foram calculados com base no índice i que simula o id de cada worker.
 
 **Código relevante:** Cole aqui a parte do coordinator.c onde você calcula a divisão:
 ```c
-// Cole seu código de divisão aqui
+for (int i = 0; i < num_workers; i++) {
+        // TODO: Calcular intervalo de senhas para este worker
+        // TODO: Converter indices para senhas de inicio e fim
+        long long inicio = i * passwords_per_worker + (i < remaining ? i : remaining);
+        long long fim   = inicio + passwords_per_worker - 1;
+        if (i < remaining) {
+            fim++;
+        }
 ```
 
 ---
@@ -21,11 +28,44 @@
 
 **Descreva como você usou fork(), execl() e wait() no coordinator:**
 
-[Explique em um parágrafo como você criou os processos, passou argumentos e esperou pela conclusão]
+O fork() foi utilizado para criar os processos filhos(workers) a partir do processo pai, o execl() foi utilizado nos processos filhos para eles de fato executarem a função do worker, e o wait() foi utilizado para verificar o status de saída dos workers.
 
 **Código do fork/exec:**
 ```c
-// Cole aqui seu loop de criação de workers
+// TODO 4: Usar fork() para criar processo filho
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("Erro no fork");
+            exit(1);
+        }
+// TODO 6: No processo filho: usar execl() para executar worker
+	else {
+        char start_password[11], end_password[11];
+        char len_str[4], id_str[4];
+
+        index_to_password(inicio, charset, charset_len, password_len, start_password);
+        index_to_password(fim,    charset, charset_len, password_len, end_password);
+        sprintf(len_str, "%d", password_len);
+        sprintf(id_str, "%d", i);
+
+        execl("./worker", "./worker", target_hash, start_password, end_password, charset, len_str, id_str, (char *)NULL);
+
+        perror("Erro no execl");
+        exit(1);
+        }
+// - Usar wait() para capturar status de saída
+        pid_t pid_done = wait(&status);
+        if (pid_done > 0) {
+			// - Identificar qual worker terminou
+            if (WIFEXITED(status)) {
+                int code = WEXITSTATUS(status);
+                printf("Worker PID %d terminou com código %d\n", pid_done, code);
+			// - Verificar se terminou normalmente ou com erro
+			// - Contar quantos workers terminaram
+            } else {
+                printf("Worker PID %d terminou de forma anormal\n", pid_done);
+            }
+        }
 ```
 
 ---
